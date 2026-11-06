@@ -466,3 +466,50 @@ body {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
+/* ==========================================
+   📱 手機與平板裝置響應式優化 (RWD)
+   ========================================== */
+@media screen and (max-width: 768px) {
+  /* 標題與文字適度縮小，避免在小螢幕被擠壓 */
+  .title {
+    font-size: 2.4rem;
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    padding: 0 15px;
+  }
+
+  /* 聖誕樹依手機比例適當縮小，確保不會超出螢幕 */
+  .tree-container {
+    transform: scale(0.85);
+    margin: 10px auto;
+  }
+
+  /* 禮物彈窗與封面卡片滿版防擠壓 */
+  .welcome-card, .gift-card {
+    width: 88%;
+    padding: 30px 20px;
+  }
+
+  /* 手機上聖誕老人圖片縮小，飛行動畫更順暢 */
+  .santa-sleigh {
+    width: 120px;
+  }
+
+  /* 底部按鈕並排且易於點擊 */
+  .controls {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: center;
+    width: 90%;
+    margin: 15px auto 0;
+  }
+
+  .btn {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+}
