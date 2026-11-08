@@ -1,208 +1,269 @@
-// --- 1. Canvas 雪花飄落 ---
-const canvas = document.getElementById('snow-canvas');
-const ctx = canvas.getContext('2d');
-
-let width = (canvas.width = window.innerWidth);
-let height = (canvas.height = window.innerHeight);
-
-let isSnowing = true;
-const numFlakes = 120;
-const flakes = [];
-
-window.addEventListener('resize', () => {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-});
-
-class Snowflake {
-  constructor() { this.reset(); }
-  reset() {
-    this.x = Math.random() * width;
-    this.y = Math.random() * -height;
-    this.size = Math.random() * 3.5 + 1;
-    this.speedY = Math.random() * 1.5 + 0.8;
-    this.speedX = Math.random() * 0.8 - 0.4;
-    this.opacity = Math.random() * 0.7 + 0.3;
-  }
-  update() {
-    this.y += this.speedY;
-    this.x += this.speedX;
-    if (this.y > height) { this.reset(); this.y = 0; }
-  }
-  draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-    ctx.fill();
-  }
-}
-
-for (let i = 0; i < numFlakes; i++) flakes.push(new Snowflake());
-
-function animateSnow() {
-  ctx.clearRect(0, 0, width, height);
-  if (isSnowing) {
-    flakes.forEach(flake => { flake.update(); flake.draw(); });
-  }
-  requestAnimationFrame(animateSnow);
-}
-animateSnow();
-
-const snowBtn = document.getElementById('snow-toggle-btn');
-snowBtn.addEventListener('click', () => {
-  isSnowing = !isSnowing;
-  snowBtn.textContent = isSnowing ? '❄️ 關閉飄雪' : '❄️ 開啟飄雪';
-});
-
-// --- 2. 聖誕樹點擊粒子 ---
-const treeContainer = document.getElementById('tree-container');
-treeContainer.addEventListener('click', (e) => {
-  if (e.target.closest('.present')) return;
-  const rect = treeContainer.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  const clickY = e.clientY - rect.top;
-
-  for (let i = 0; i < 15; i++) createSparkle(clickX, clickY);
-  playBellSound();
-});
-
-function createSparkle(x, y) {
-  const sparkle = document.createElement('div');
-  sparkle.innerText = '✦';
-  sparkle.style.position = 'absolute';
-  sparkle.style.left = `${x}px`;
-  sparkle.style.top = `${y}px`;
-  sparkle.style.color = ['#ffd700', '#ff4500', '#00ffff', '#ffffff'][Math.floor(Math.random() * 4)];
-  sparkle.style.fontSize = `${Math.random() * 15 + 10}px`;
-  sparkle.style.pointerEvents = 'none';
-  sparkle.style.zIndex = '20';
-  sparkle.style.transition = 'transform 0.8s ease-out, opacity 0.8s ease-out';
-
-  treeContainer.appendChild(sparkle);
-
-  const destX = (Math.random() - 0.5) * 120;
-  const destY = (Math.random() - 0.5) * 120;
-
-  requestAnimationFrame(() => {
-    sparkle.style.transform = `translate(${destX}px, ${destY}px) scale(0)`;
-    sparkle.style.opacity = '0';
-  });
-
-  setTimeout(() => sparkle.remove(), 800);
-}
-
-// --- 3. 禮物盒開箱與彈窗系統 ---
+// --- 1. 驚喜禮物資料庫 ---
 const giftsData = [
-  { icon: '🐧', title: '妳最愛的企鵝Pingu', desc: '獲得一隻超可愛的企鵝Pingu！願它陪你度過每一個溫暖的冬夜。' },
-  { icon: '🎉', title: '聖誕幸運星', desc: '恭喜獲得「幸運光環」！新的一年所有好運與美夢都會實現。' },
-  { icon: '☕', title: '熱可可與棉花糖', desc: '送你一杯濃郁熱可可加滿滿棉花糖！甜蜜溫暖一整冬。' }
+  { 
+    icon: '🎫', 
+    title: '大餐兌換券', 
+    desc: '憑此券可免費兌換「帶妳去吃妳最想吃的大餐」一次！無效期限制 🍽️' 
+  },
+  { 
+    icon: '💌', 
+    title: '專屬告白', 
+    desc: '遇見妳是今年最幸運的事，願以後的每個聖誕節都有我陪在妳身邊 ❤️' 
+  },
+  { 
+    icon: '🎬', 
+    title: '電影約會券', 
+    desc: '憑此券可指派我陪妳看任意你想看的電影，並附贈爆米花與飲料 🍿' 
+  }
 ];
 
-const modal = document.getElementById('gift-modal');
+// --- 2. 繪製金藍光纖粒子螺旋聖誕樹 (Canvas) ---
+const treeCanvas = document.getElementById('tree-canvas');
+if (treeCanvas) {
+  const ctx = treeCanvas.getContext('2d');
+  let treeAngle = 0;
+
+  function drawTree() {
+    ctx.clearRect(0, 0, treeCanvas.width, treeCanvas.height);
+    
+    const cx = treeCanvas.width / 2;
+    const cy = treeCanvas.height - 70;
+    const height = 300;
+    const maxRadius = 110;
+    const layers = 600;
+
+    const shadowGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 120);
+    shadowGrad.addColorStop(0, 'rgba(0, 180, 255, 0.4)');
+    shadowGrad.addColorStop(0.5, 'rgba(255, 215, 0, 0.2)');
+    shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = shadowGrad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 120, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    for (let i = 0; i < layers; i++) {
+      const progress = i / layers;
+      const y = cy - progress * height;
+      const radius = (1 - progress) * maxRadius;
+      
+      const angle = progress * Math.PI * 24 + treeAngle;
+      const x = cx + Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+
+      const size = (1.5 + (z / maxRadius) * 0.8) * (1.2 - progress * 0.4);
+      const alpha = 0.5 + (z / maxRadius) * 0.4;
+
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+
+      if (i % 7 === 0) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 8;
+      } else if (i % 3 === 0) {
+        ctx.fillStyle = `rgba(135, 206, 250, ${alpha})`;
+        ctx.shadowColor = '#00d4ff';
+        ctx.shadowBlur = 6;
+      } else {
+        ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 6;
+      }
+
+      ctx.fill();
+    }
+
+    const starY = cy - height;
+    const starGrad = ctx.createRadialGradient(cx, starY, 2, cx, starY, 35);
+    starGrad.addColorStop(0, '#ffffff');
+    starGrad.addColorStop(0.2, '#ffe57f');
+    starGrad.addColorStop(0.6, 'rgba(255, 215, 0, 0.6)');
+    starGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = starGrad;
+    ctx.beginPath();
+    ctx.arc(cx, starY, 35, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 235, 150, 0.8)';
+    ctx.lineWidth = 2;
+    for (let a = 0; a < 4; a++) {
+      const rot = (a * Math.PI / 4) + (treeAngle * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(cx - Math.cos(rot) * 45, starY - Math.sin(rot) * 45);
+      ctx.lineTo(cx + Math.cos(rot) * 45, starY + Math.sin(rot) * 45);
+      ctx.stroke();
+    }
+
+    treeAngle += 0.015;
+    requestAnimationFrame(drawTree);
+  }
+  drawTree();
+}
+
+// --- 3. 背景雪花系統 (Canvas) ---
+const snowCanvas = document.getElementById('snow-canvas');
+if (snowCanvas) {
+  const sCtx = snowCanvas.getContext('2d');
+  let flakes = [];
+  let isSnowing = true;
+
+  function resizeSnow() {
+    snowCanvas.width = window.innerWidth;
+    snowCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeSnow);
+  resizeSnow();
+
+  for (let i = 0; i < 80; i++) {
+    flakes.push({
+      x: Math.random() * snowCanvas.width,
+      y: Math.random() * snowCanvas.height,
+      r: Math.random() * 3 + 1,
+      d: Math.random() + 0.5,
+      gold: Math.random() > 0.7
+    });
+  }
+
+  function drawSnow() {
+    sCtx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
+    if (!isSnowing) return;
+
+    flakes.forEach(f => {
+      sCtx.beginPath();
+      sCtx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      if (f.gold) {
+        sCtx.fillStyle = 'rgba(255, 215, 0, 0.8)';
+        sCtx.shadowColor = '#ffd700';
+        sCtx.shadowBlur = 5;
+      } else {
+        sCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        sCtx.shadowColor = '#ffffff';
+        sCtx.shadowBlur = 3;
+      }
+      sCtx.fill();
+
+      f.y += f.d;
+      f.x += Math.sin(f.y * 0.02) * 0.5;
+
+      if (f.y > snowCanvas.height) {
+        f.y = -10;
+        f.x = Math.random() * snowCanvas.width;
+      }
+    });
+
+    requestAnimationFrame(drawSnow);
+  }
+  drawSnow();
+
+  const snowBtn = document.getElementById('snow-toggle-btn');
+  if (snowBtn) {
+    snowBtn.addEventListener('click', () => {
+      isSnowing = !isSnowing;
+      if (isSnowing) drawSnow();
+    });
+  }
+}
+
+// --- 4. 音效與音樂控制 ---
+function playBellSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 1.2);
+  } catch (e) {
+    console.log("Audio not supported or blocked");
+  }
+}
+
+const bgMusic = new Audio('christmas-music.mp3');
+bgMusic.loop = true;
+let isPlayingMusic = false;
+
+const musicBtn = document.getElementById('music-btn');
+if (musicBtn) {
+  musicBtn.addEventListener('click', () => {
+    if (isPlayingMusic) {
+      bgMusic.pause();
+      musicBtn.textContent = '🎵 播放背景音樂';
+    } else {
+      bgMusic.play().then(() => {
+        musicBtn.textContent = '⏸️ 暫停背景音樂';
+      }).catch(err => console.log("Music play blocked", err));
+    }
+    isPlayingMusic = !isPlayingMusic;
+  });
+}
+
+// --- 5. 禮物彈窗邏輯 ---
+const giftModal = document.getElementById('gift-modal');
 const modalIcon = document.getElementById('modal-gift-icon');
 const modalTitle = document.getElementById('modal-gift-title');
 const modalDesc = document.getElementById('modal-gift-desc');
 const closeModalBtn = document.getElementById('close-modal-btn');
 
-document.querySelectorAll('.present').forEach((present) => {
-  present.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const giftIndex = present.getAttribute('data-gift');
-    const gift = giftsData[giftIndex];
-
-    present.classList.add('open');
+document.querySelectorAll('.present').forEach(p => {
+  p.addEventListener('click', () => {
     playBellSound();
-
-    setTimeout(() => {
-      modalIcon.textContent = gift.icon;
-      modalTitle.textContent = gift.title;
-      modalDesc.textContent = gift.desc;
-      modal.classList.remove('hidden');
-    }, 400);
+    const index = p.getAttribute('data-gift');
+    const data = giftsData[index];
+    if (data) {
+      if (modalIcon) modalIcon.textContent = data.icon;
+      if (modalTitle) modalTitle.textContent = data.title;
+      if (modalDesc) modalDesc.textContent = data.desc;
+      if (giftModal) giftModal.classList.remove('hidden');
+    }
   });
 });
 
-closeModalBtn.addEventListener('click', () => {
-  modal.classList.add('hidden');
-  document.querySelectorAll('.present').forEach(p => p.classList.remove('open'));
-});
-
-// --- 4. 點擊清脆鈴鐺音效 ---
-let audioCtx = null;
-function initAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
+if (closeModalBtn) {
+  closeModalBtn.addEventListener('click', () => {
+    if (giftModal) giftModal.classList.add('hidden');
+  });
 }
 
-function playBellSound() {
-  initAudio();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(1200 + Math.random() * 400, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.5);
-}
-
-// --- 5. MP3 背景音樂播放器 ---
-const bgMusic = new Audio('christmas-music.mp3');
-bgMusic.loop = true; // 設定循環播放
-let isPlayingMusic = false;
-
-const musicBtn = document.getElementById('music-btn');
-musicBtn.addEventListener('click', () => {
-  if (isPlayingMusic) {
-    bgMusic.pause();
-    isPlayingMusic = false;
-    musicBtn.textContent = '🎵 播放背景音樂';
-  } else {
-    bgMusic.play().then(() => {
-      isPlayingMusic = true;
-      musicBtn.textContent = '⏸️ 暫停背景音樂';
-    }).catch(err => {
-      console.log('播放失敗，請確認資料夾內是否有 christmas-music.mp3 檔案。', err);
-    });
-  }
-});
-// --- 點擊開啟卡片：觸發聖誕老人送禮物動畫 ---
+// --- 6. 點擊封面 ➔ 企鵝踱步登場送禮 ➔ 禮物落地流程 ---
 const welcomeOverlay = document.getElementById('welcome-overlay');
 const openCardBtn = document.getElementById('open-card-btn');
-const santaSleigh = document.getElementById('santa-sleigh');
 const presentsGroup = document.getElementById('presents-group');
+const penguin = document.getElementById('santa-sleigh');
 
-openCardBtn.addEventListener('click', () => {
-  // 1. 播放開卡鈴聲
-  playBellSound();
+if (openCardBtn) {
+  openCardBtn.addEventListener('click', () => {
+    playBellSound();
+    
+    // 淡出封面
+    if (welcomeOverlay) {
+      welcomeOverlay.classList.add('fade-out');
+    }
 
-  // 2. 封面淡出隱藏
-  welcomeOverlay.classList.add('fade-out');
-
-  // 3. 自動播放背景音樂
-  if (typeof bgMusic !== 'undefined') {
+    // 嘗試播放音樂（若失敗不卡死流程）
     bgMusic.play().then(() => {
       isPlayingMusic = true;
-      const musicBtn = document.getElementById('music-btn');
       if (musicBtn) musicBtn.textContent = '⏸️ 暫停背景音樂';
-    }).catch(err => console.log(err));
-  }
+    }).catch(err => console.log("Autoplay prevented:", err));
 
-  // 4. 觸發聖誕老人飛越畫面動畫 (延遲 0.3 秒啟動)
-  setTimeout(() => {
-    santaSleigh.classList.add('fly-animation');
-  }, 300);
+    // 1. 企鵝登場
+    setTimeout(() => {
+      if (penguin) {
+        penguin.classList.add('walk-animation');
+      }
+    }, 300);
 
-  // 5. 聖誕老人飛到樹上方時（約 1.5 秒），禮物盒降落在樹下並伴隨鈴聲
-  setTimeout(() => {
-    presentsGroup.classList.add('show-presents');
-    playBellSound();
-  }, 1600);
-});
+    // 2. 企鵝於 4.8 秒抵達樹下並高興跳躍時，彈出禮物
+    setTimeout(() => {
+      if (presentsGroup) {
+        presentsGroup.classList.add('show-presents');
+      }
+      playBellSound();
+    }, 4800);
+  });
+}

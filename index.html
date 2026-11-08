@@ -4,79 +4,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Merry Christmas, 林妍儀!</title>
+  
+  <!-- 引入英文草寫 (Great Vibes) + 中文浪漫手寫體 (Ma Shan Zheng) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- 1. 封面迎賓畫面 -->
+  <!-- 1. 封面迎賓畫面 (Welcome Overlay) -->
   <div id="welcome-overlay" class="welcome-overlay">
     <div class="welcome-card">
       <div class="welcome-icon">✉️</div>
-      <h2>一封專屬於妳的聖誕心意</h2>
+      <h2>一封給 林妍儀 的聖誕心意</h2>
       <p>點擊下方按鈕開啟專屬於妳的驚喜</p>
       <button id="open-card-btn" class="open-btn">開啟聖誕卡片 ✨</button>
     </div>
   </div>
 
-  <!-- 2. 背景雪花 Canvas -->
+  <!-- 2. 背景飄雪與金燦星空 Canvas -->
   <canvas id="snow-canvas"></canvas>
 
-  <!-- 3. 聖誕老人雪橇飛行元素 -->
-  <div id="santa-sleigh" class="santa-sleigh">🎅🛷🦌✨</div>
+  <!-- 3. 聖誕老人雪橇圖片 -->
+  <img id="santa-sleigh" class="penguin-walk" src="penguin.webp" alt="送禮物的小企鵝" title="小企鵝正在送禮物給妳！">
 
-  <!-- 4. 主要網頁內容 -->
+  <!-- 4. 主要網頁內容（只保留唯一一組文字 + 聖誕樹） -->
   <main class="container">
-    <header class="header">
-      <h1 class="title">Merry Christmas,<br>林妍儀</h1>
-      <p class="subtitle">特別為妳準備的聖誕驚喜，點擊樹下的禮物盒看看吧 🎁</p>
-    </header>
+    <div class="main-content">
+      
+      <!-- 左側：經典金色文字區 -->
+      <header class="header">
+        <div class="to-text">To: 林妍儀</div>
+        <h1 class="title">Merry Christmas!</h1>
+        <p class="subtitle">特別為妳準備的聖誕驚喜 ✨<br>點擊樹下的禮物盒拆開看看吧 🎁</p>
+      </header>
 
-    <div class="tree-container" id="tree-container" title="點擊聖誕樹有閃耀星光！">
-      <div class="star">★</div>
-
-      <div class="tree-layer layer-1">
-        <span class="bauble b1"></span>
-        <span class="bauble b2"></span>
-        <span class="light l1"></span>
-      </div>
-
-      <div class="tree-layer layer-2">
-        <span class="bauble b3"></span>
-        <span class="bauble b4"></span>
-        <span class="light l2"></span>
-        <span class="light l3"></span>
-      </div>
-
-      <div class="tree-layer layer-3">
-        <span class="bauble b5"></span>
-        <span class="bauble b6"></span>
-        <span class="bauble b7"></span>
-        <span class="light l4"></span>
-        <span class="light l5"></span>
-      </div>
-
-      <div class="trunk"></div>
-
-      <!-- 禮物盒區域（預設帶有 drop-in 淡入登場效果） -->
-      <div class="presents" id="presents-group">
-        <div class="present p1" data-gift="0" title="點擊拆開禮物 1">
-          <div class="lid"></div>
-          <div class="box"><div class="ribbon-v"></div><div class="ribbon-h"></div></div>
-        </div>
-        <div class="present p2" data-gift="1" title="點擊拆開禮物 2">
-          <div class="lid"></div>
-          <div class="box"><div class="ribbon-v"></div><div class="ribbon-h"></div></div>
-        </div>
-        <div class="present p3" data-gift="2" title="點擊拆開禮物 3">
-          <div class="lid"></div>
-          <div class="box"><div class="ribbon-v"></div><div class="ribbon-h"></div></div>
+      <!-- 右側：璀璨聖誕樹與禮物盒 -->
+      <div class="tree-wrapper" id="tree-container" title="點擊聖誕樹爆發星光！">
+        <canvas id="tree-canvas" width="340" height="420"></canvas>
+        
+        <!-- 樹下禮物盒區域 -->
+        <div class="presents" id="presents-group">
+          <div class="present p1" data-gift="0" title="點擊拆開禮物 1">
+            <div class="lid"></div>
+            <div class="box"><div class="ribbon-v"></div><div class="ribbon-h"></div></div>
+          </div>
+          <div class="present p2" data-gift="1" title="點擊拆開禮物 2">
+            <div class="lid"></div>
+            <div class="box"><div class="ribbon-v"></div><div class="ribbon-h"></div></div>
+          </div>
+          <div class="present p3" data-gift="2" title="點擊拆開禮物 3">
+            <div class="lid"></div>
+            <div class="box"><div class="ribbon-v"></div><div class="ribbon-h"></div></div>
+          </div>
         </div>
       </div>
+
     </div>
 
+    <!-- 底部控制按鈕 -->
     <div class="controls">
       <button id="music-btn" class="btn">🎵 播放背景音樂</button>
       <button id="snow-toggle-btn" class="btn">❄️ 開/關飄雪</button>
