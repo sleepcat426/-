@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Merry Christmas, 林妍儀!</title>
   
-  <!-- 引入英文草寫 (Great Vibes) + 中文浪漫手寫體 (Ma Shan Zheng) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -14,7 +13,7 @@
 </head>
 <body>
 
-  <!-- 1. 封面迎賓畫面 (Welcome Overlay) -->
+  <!-- 1. 迎賓封面 overlay -->
   <div id="welcome-overlay" class="welcome-overlay">
     <div class="welcome-card">
       <div class="welcome-icon">✉️</div>
@@ -24,28 +23,28 @@
     </div>
   </div>
 
-  <!-- 2. 背景飄雪與金燦星空 Canvas -->
+  <!-- 2. 背景飄雪 Canvas -->
   <canvas id="snow-canvas"></canvas>
 
-  <!-- 3. 聖誕老人雪橇圖片 -->
-  <img id="santa-sleigh" class="penguin-walk" src="penguin.webp" alt="送禮物的小企鵝" title="小企鵝正在送禮物給妳！">
+  <!-- 3. 可愛踱步小企鵝 -->
+  <img id="santa-sleigh" class="penguin-walk" src="penguin.webp" alt="送禮物的小企鵝">
 
-  <!-- 4. 主要網頁內容（只保留唯一一組文字 + 聖誕樹） -->
+  <!-- 4. 主要內容區塊 -->
   <main class="container">
     <div class="main-content">
       
-      <!-- 左側：經典金色文字區 -->
+      <!-- 左側：金色藝術標題 -->
       <header class="header">
         <div class="to-text">To: 林妍儀</div>
         <h1 class="title">Merry Christmas!</h1>
         <p class="subtitle">特別為妳準備的聖誕驚喜 ✨<br>點擊樹下的禮物盒拆開看看吧 🎁</p>
       </header>
 
-      <!-- 右側：璀璨聖誕樹與禮物盒 -->
-      <div class="tree-wrapper" id="tree-container" title="點擊聖誕樹爆發星光！">
+      <!-- 右側：金藍螺旋光纖聖誕樹與樹下禮物 -->
+      <div class="tree-wrapper" id="tree-container">
         <canvas id="tree-canvas" width="340" height="420"></canvas>
         
-        <!-- 樹下禮物盒區域 -->
+        <!-- 樹下三色禮物盒 -->
         <div class="presents" id="presents-group">
           <div class="present p1" data-gift="0" title="點擊拆開禮物 1">
             <div class="lid"></div>
@@ -71,7 +70,7 @@
     </div>
   </main>
 
-  <!-- 禮物彈窗 -->
+  <!-- 5. 禮物告白彈窗 -->
   <div id="gift-modal" class="modal hidden">
     <div class="modal-content">
       <div class="gift-card">

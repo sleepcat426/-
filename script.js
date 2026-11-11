@@ -17,7 +17,7 @@ const giftsData = [
   }
 ];
 
-// --- 2. 繪製金藍光纖粒子螺旋聖誕樹 (Canvas) ---
+// --- 2. 繪製金藍光纖粒子螺旋聖誕樹 ---
 const treeCanvas = document.getElementById('tree-canvas');
 if (treeCanvas) {
   const ctx = treeCanvas.getContext('2d');
@@ -100,7 +100,7 @@ if (treeCanvas) {
   drawTree();
 }
 
-// --- 3. 背景雪花系統 (Canvas) ---
+// --- 3. 背景雪花系統 ---
 const snowCanvas = document.getElementById('snow-canvas');
 if (snowCanvas) {
   const sCtx = snowCanvas.getContext('2d');
@@ -114,13 +114,14 @@ if (snowCanvas) {
   window.addEventListener('resize', resizeSnow);
   resizeSnow();
 
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 110; i++) {
     flakes.push({
       x: Math.random() * snowCanvas.width,
       y: Math.random() * snowCanvas.height,
-      r: Math.random() * 3 + 1,
-      d: Math.random() + 0.5,
-      gold: Math.random() > 0.7
+      r: Math.random() * 3.5 + 1,
+      d: Math.random() * 1.2 + 0.5,
+      opacity: Math.random() * 0.7 + 0.3,
+      gold: Math.random() > 0.8
     });
   }
 
@@ -131,19 +132,20 @@ if (snowCanvas) {
     flakes.forEach(f => {
       sCtx.beginPath();
       sCtx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      
       if (f.gold) {
-        sCtx.fillStyle = 'rgba(255, 215, 0, 0.8)';
-        sCtx.shadowColor = '#ffd700';
-        sCtx.shadowBlur = 5;
+        sCtx.fillStyle = `rgba(254, 240, 138, ${f.opacity})`;
+        sCtx.shadowColor = '#fef08a';
+        sCtx.shadowBlur = 8;
       } else {
-        sCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        sCtx.fillStyle = `rgba(255, 255, 255, ${f.opacity})`;
         sCtx.shadowColor = '#ffffff';
-        sCtx.shadowBlur = 3;
+        sCtx.shadowBlur = 5;
       }
       sCtx.fill();
 
       f.y += f.d;
-      f.x += Math.sin(f.y * 0.02) * 0.5;
+      f.x += Math.sin(f.y * 0.015) * 0.6;
 
       if (f.y > snowCanvas.height) {
         f.y = -10;
@@ -180,7 +182,7 @@ function playBellSound() {
     osc.start();
     osc.stop(audioCtx.currentTime + 1.2);
   } catch (e) {
-    console.log("Audio not supported or blocked");
+    console.log("Audio play prevented");
   }
 }
 
@@ -230,7 +232,7 @@ if (closeModalBtn) {
   });
 }
 
-// --- 6. 點擊封面 ➔ 企鵝踱步登場送禮 ➔ 禮物落地流程 ---
+// --- 6. 點擊封面卡片觸發動畫流程 ---
 const welcomeOverlay = document.getElementById('welcome-overlay');
 const openCardBtn = document.getElementById('open-card-btn');
 const presentsGroup = document.getElementById('presents-group');
@@ -240,25 +242,21 @@ if (openCardBtn) {
   openCardBtn.addEventListener('click', () => {
     playBellSound();
     
-    // 淡出封面
     if (welcomeOverlay) {
       welcomeOverlay.classList.add('fade-out');
     }
 
-    // 嘗試播放音樂（若失敗不卡死流程）
     bgMusic.play().then(() => {
       isPlayingMusic = true;
       if (musicBtn) musicBtn.textContent = '⏸️ 暫停背景音樂';
-    }).catch(err => console.log("Autoplay prevented:", err));
+    }).catch(err => console.log("Autoplay blocked:", err));
 
-    // 1. 企鵝登場
     setTimeout(() => {
       if (penguin) {
         penguin.classList.add('walk-animation');
       }
     }, 300);
 
-    // 2. 企鵝於 4.8 秒抵達樹下並高興跳躍時，彈出禮物
     setTimeout(() => {
       if (presentsGroup) {
         presentsGroup.classList.add('show-presents');
