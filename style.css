@@ -70,18 +70,6 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
-  /* 純淨冷白月亮 
-  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e2e8f0 55%, #94a3b8 100%);
-  
-  /* 夢幻藍綠極光擴散光暈 
-  box-shadow: 
-    0 0 35px rgba(255, 255, 255, 0.8),
-    0 0 80px rgba(56, 189, 248, 0.4),
-    0 0 130px rgba(16, 185, 129, 0.25);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.85;
-}*/
 
 /* ❄️ 底部雪地柔和過渡 */
 body::after {
