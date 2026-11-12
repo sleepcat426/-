@@ -23,7 +23,10 @@ body {
   
   /* 💡 關鍵：固定設計畫布比例，所有月亮、文字、聖誕樹的相對位置永遠不會跑掉 */
   width: 1280px;
+  min-width: 1280px;
   height: 720px;
+  min-height: 720px;
+  flex-shrink: 0;
   overflow: hidden;
   position: relative;
   transform-origin: center center;

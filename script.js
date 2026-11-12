@@ -266,24 +266,28 @@ if (openCardBtn) {
   });
 }
 
-// --- 7. 手機與電腦「等比例自動縮放」引擎 ---
+// --- 電腦無邊界滿版 ＋ 手機（含 LINE 瀏覽器）等比例撐滿寬度引擎 ---
 function fitScreenScale() {
-  const winW = window.innerWidth;
-  const winH = window.innerHeight;
+  // 同時取得多種視窗寬高來源，確保 LINE 內建瀏覽器也能抓到正確尺寸
+  const winW = document.documentElement.clientWidth || window.innerWidth;
+  const winH = document.documentElement.clientHeight || window.innerHeight;
+  
   const baseHeight = 720;
   let baseWidth = 1280;
 
   if (winW > winH) {
-    // 🖥️ 電腦 / 橫向螢幕：動態配合螢幕長寬比，讓畫面 100% 滿版無任何黑邊
-    baseWidth = Math.max(1150, Math.round(baseHeight * (winW / winH)));
+    // 🖥️ 電腦 / 橫向螢幕：動態配合螢幕長寬比，100% 滿版無黑邊
+    baseWidth = Math.max(1280, Math.round(baseHeight * (winW / winH)));
   } else {
-    // 📱 手機直向螢幕：鎖定標準 1280x720 比例，完整保留電腦構圖
+    // 📱 手機直向螢幕：強制鎖定標準 1280x720 寬螢幕比例
     baseWidth = 1280;
   }
 
-  // 更新畫布與雪花範圍尺寸
+  // 強制鎖定畫布實際像素，不被手機壓縮
   document.body.style.width = `${baseWidth}px`;
+  document.body.style.minWidth = `${baseWidth}px`;
   document.body.style.height = `${baseHeight}px`;
+  document.body.style.minHeight = `${baseHeight}px`;
 
   const sCanvas = document.getElementById('snow-canvas');
   if (sCanvas) {
@@ -291,11 +295,14 @@ function fitScreenScale() {
     sCanvas.height = baseHeight;
   }
 
-  // 計算縮放倍率並套用
+  // 計算縮放倍率並套用（手機直立時會剛好撐滿 100% 手機螢幕左右寬度）
   const scale = Math.min(winW / baseWidth, winH / baseHeight);
   document.body.style.transform = `scale(${scale})`;
 }
 
-// 頁面載入與視窗縮放時即時執行
+// 頁面載入、視窗變動，以及 LINE 瀏覽器動畫展開後（100ms、500ms）各執行一次確保精準
 window.addEventListener('resize', fitScreenScale);
+window.addEventListener('load', fitScreenScale);
 fitScreenScale();
+setTimeout(fitScreenScale, 100);
+setTimeout(fitScreenScale, 500);
