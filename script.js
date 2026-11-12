@@ -108,8 +108,8 @@ if (snowCanvas) {
   let isSnowing = true;
 
   function resizeSnow() {
-    snowCanvas.width = window.innerWidth;
-    snowCanvas.height = window.innerHeight;
+    snowCanvas.width = 1280;
+    snowCanvas.height = 720;
   }
   window.addEventListener('resize', resizeSnow);
   resizeSnow();
@@ -265,3 +265,37 @@ if (openCardBtn) {
     }, 4800);
   });
 }
+
+// --- 7. 手機與電腦「等比例自動縮放」引擎 ---
+function fitScreenScale() {
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+  const baseHeight = 720;
+  let baseWidth = 1280;
+
+  if (winW > winH) {
+    // 🖥️ 電腦 / 橫向螢幕：動態配合螢幕長寬比，讓畫面 100% 滿版無任何黑邊
+    baseWidth = Math.max(1150, Math.round(baseHeight * (winW / winH)));
+  } else {
+    // 📱 手機直向螢幕：鎖定標準 1280x720 比例，完整保留電腦構圖
+    baseWidth = 1280;
+  }
+
+  // 更新畫布與雪花範圍尺寸
+  document.body.style.width = `${baseWidth}px`;
+  document.body.style.height = `${baseHeight}px`;
+
+  const sCanvas = document.getElementById('snow-canvas');
+  if (sCanvas) {
+    sCanvas.width = baseWidth;
+    sCanvas.height = baseHeight;
+  }
+
+  // 計算縮放倍率並套用
+  const scale = Math.min(winW / baseWidth, winH / baseHeight);
+  document.body.style.transform = `scale(${scale})`;
+}
+
+// 頁面載入與視窗縮放時即時執行
+window.addEventListener('resize', fitScreenScale);
+fitScreenScale();

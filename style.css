@@ -1,5 +1,5 @@
 /* ==========================================
-   1. 基礎重置與極光雪景全螢幕背景
+   1. 等比例畫布設定（手機直向與電腦畫面完全一致）
    ========================================== */
 * {
   box-sizing: border-box;
@@ -7,12 +7,26 @@
   padding: 0;
 }
 
+html {
+  width: 100%;
+  height: 100%;
+  background-color: #020617; /* 螢幕上下留白處以深邃夜空色自然填滿 */
+  overflow: hidden;          /* 鎖定畫面，避免手機手指誤觸滑動 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 body {
   font-family: 'Noto Sans TC', sans-serif;
   color: #ffffff;
-  min-height: 100vh;
-  overflow-x: hidden;
+  
+  /* 💡 關鍵：固定設計畫布比例，所有月亮、文字、聖誕樹的相對位置永遠不會跑掉 */
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
   position: relative;
+  transform-origin: center center;
 
   /* 🌌 沉浸式極光雪景全螢幕背景 */
   background: 
@@ -24,17 +38,39 @@ body {
 body::before {
   content: '';
   position: fixed;
-  top: 6%;
-  left: 46%;
+  top: 15%;
+  left: 71%;
   transform: translateX(-50%);
-  width: 140px;
-  height: 140px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
+
+  /* 💡 關鍵：中心純白高光，邊緣直接漸變透明，徹底消除生硬圓框線 */
+  background: radial-gradient(
+    circle, 
+    rgba(255, 255, 255, 1) 0%, 
+    rgba(255, 255, 255, 0.9) 35%, 
+    rgba(224, 242, 254, 0.4) 65%, 
+    rgba(224, 242, 254, 0) 100%
+  );
   
-  /* 純淨冷白月亮 */
+  /* 💡 關鍵：層層擴散的極光青白空氣光暈 (Atmospheric Glow) */
+  box-shadow: 
+    0 0 20px 6px rgba(255, 255, 255, 0.85),
+    0 0 55px 20px rgba(186, 230, 253, 0.45),
+    0 0 110px 45px rgba(52, 211, 153, 0.25),
+    0 0 160px 70px rgba(56, 189, 248, 0.15);
+    
+  /* 讓月亮光芒與背景極光自然疊加融合 */
+  mix-blend-mode: screen;
+  filter: blur(1px); /* 微微柔焦，消除數位銳利感 */
+  pointer-events: none;
+  z-index: 0;
+}
+  /* 純淨冷白月亮 
   background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e2e8f0 55%, #94a3b8 100%);
   
-  /* 夢幻藍綠極光擴散光暈 */
+  /* 夢幻藍綠極光擴散光暈 
   box-shadow: 
     0 0 35px rgba(255, 255, 255, 0.8),
     0 0 80px rgba(56, 189, 248, 0.4),
@@ -42,7 +78,7 @@ body::before {
   pointer-events: none;
   z-index: 0;
   opacity: 0.85;
-}
+}*/
 
 /* ❄️ 底部雪地柔和過渡 */
 body::after {
@@ -199,7 +235,7 @@ body::after {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transform: translateX(-30px);
+  transform: translateX(-80px);
   margin-top: 150px;
   z-index: 2;
   filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.45));
