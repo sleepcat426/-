@@ -65,6 +65,8 @@
 
     <!-- 底部控制按鈕 -->
     <div class="controls">
+      <button id="add-photo-btn" class="btn">📸 新增照片</button>
+      <input type="file" id="photo-upload-input" accept="image/*" multiple style="display: none;">  
       <button id="music-btn" class="btn">🎵 播放背景音樂</button>
       <button id="snow-toggle-btn" class="btn">❄️ 開/關飄雪</button>
     </div>
@@ -79,6 +81,14 @@
         <p class="gift-desc" id="modal-gift-desc">祝福語或禮物說明</p>
         <button id="close-modal-btn" class="btn btn-close">收下禮物 💖</button>
       </div>
+    </div>
+  </div>
+  <!-- 6. 照片特寫拍立得彈窗 -->
+  <div id="photo-modal" class="modal hidden">
+    <div class="polaroid-card">
+      <img id="modal-photo-img" src="" alt="我們的回憶">
+      <p id="modal-photo-caption" class="polaroid-caption">照片故事說明</p>
+      <button id="close-photo-btn" class="btn btn-close">回到星空聖誕樹 ✨</button>
     </div>
   </div>
 
