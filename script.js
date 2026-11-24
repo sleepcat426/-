@@ -68,9 +68,9 @@ if (treeCanvas) {
     const rows = Math.ceil(total / cols);
 
     // 散開時的安全可視範圍（以樹中心 cx 為基準，往上展開，絕不掉出底部）
-    const areaWidth = 240;   // 左右寬度範圍 (-120 ~ +120)
-    const areaHeight = 250;  // 上下高度範圍
-    const centerOffsetY = -165; // 往上提，讓所有照片都在畫布正中央
+    const areaWidth = 400;   // 左右寬度範圍 (-120 ~ +120)
+    const areaHeight = 360;  // 上下高度範圍
+    const centerOffsetY = -220; // 往上提，讓所有照片都在畫布正中央
 
     loadedPhotos.forEach((p, idx) => {
       // A. 聖誕樹狀態：黃金角螺旋分布
@@ -184,9 +184,9 @@ if (treeCanvas) {
     });
   }
 
-  // 建立 550 顆 3D 粒子
+  // 建立 750 顆 3D 粒子
   const particles = [];
-  const totalParticles = 550;
+  const totalParticles = 750;
   for (let i = 0; i < totalParticles; i++) {
     const progress = i / totalParticles;
     particles.push({
@@ -334,9 +334,9 @@ if (treeCanvas) {
     }
 
     const cx = treeCanvas.width / 2;
-    const cy = treeCanvas.height - 70;
-    const height = 300;
-    const maxRadius = 110;
+    const cy = treeCanvas.height - 65;
+    const height = 410;
+    const maxRadius = 160;
 
     // 樹底光暈
     const baseGlowAlpha = 1 - currentSpread * 0.7;
@@ -408,12 +408,14 @@ if (treeCanvas) {
       return { photo, index, x, y, z };
     }).sort((a, b) => a.z - b.z);
 
-    // 根據照片數量自動微調散開後的大小，照片多時也不會擠在一起
-    const maxSpreadSize = loadedPhotos.length > 9 ? 46 : 56;
+    // 根據照片總數自動微調大小（照片少時大張、照片多時精緻不遮擋樹身）
+    const count = loadedPhotos.length;
+    const treePhotoSize = count > 12 ? 22 : (count > 7 ? 25 : 28);
+    const spreadPhotoSize = count > 14 ? 44 : (count > 8 ? 52 : 60);
 
     renderList.forEach(({ photo, index, x, y, z }) => {
       const isHovered = (index === hoverPhotoIndex);
-      const baseSize = 28 + currentSpread * (maxSpreadSize - 28);
+      const baseSize = treePhotoSize + currentSpread * (spreadPhotoSize - treePhotoSize);
       const size = isHovered ? baseSize * 1.25 : baseSize;
       const depthScale = 0.88 + (z / 220) * 0.2;
       const finalSize = size * depthScale;
