@@ -3,7 +3,7 @@ const giftsData = [
   { 
     icon: '🐧', 
     title: '可愛企鵝兌換券', 
-    desc: '頻此券獲得隻超可愛的企鵝Pingu！願它陪你度過每一個溫暖的冬夜。' 
+    desc: '憑此券獲得一隻超可愛的企鵝 Pingu！願它陪你度過每一個溫暖的冬夜。' 
   },
   { 
     icon: '💌', 
@@ -17,22 +17,10 @@ const giftsData = [
   }
 ];
 
-// --- 2. 互動 3D 星塵與照片聖誕樹引擎（支援資料夾自動載入 ＋ 網頁即時上傳） ---
-
-// 💡 1. 您只需要把照片放進資料夾，依序命名為 photo1.jpg, photo2.jpg, photo3.jpg ...（最多 20 張）
-// 網頁會自動把有放入的照片全部掛上聖誕樹，不存在的編號會自動跳過！
+// --- 2. 互動 3D 星塵與照片聖誕樹引擎 ---
 const maxFolderPhotos = 20;
-
-// 可選：幫特定編號的照片寫上專屬告白文字（沒寫的會自動套用預設浪漫文字）
-const customCaptions = {
-  1: '第一次一起過聖誕節的紀念 ✨',
-  2: '跟妳在一起的每一天都很開心 ❤️',
-  3: '最喜歡看妳笑起來的樣子 😊',
-  4: '未來還要一起去更多地方看風景 🌟',
-  5: 'Merry Christmas, 林妍儀 🎄'
-};
-
 const treeCanvas = document.getElementById('tree-canvas');
+
 if (treeCanvas) {
   const ctx = treeCanvas.getContext('2d');
 
@@ -41,49 +29,132 @@ if (treeCanvas) {
   let targetSpread = 0;    // 0 = 聚合成聖誕樹, 1 = 散開成星海
   let currentSpread = 0;
   let isDragging = false;
+  let dragMoved = false;
   let lastX = 0;
   let velocityX = 0.012;
   let initialPinchDist = null;
   let hoverPhotoIndex = -1;
 
-  // 動態存放所有成功載入的照片物件
   const loadedPhotos = [];
+  let hasRealPhotos = false;
 
-  // 共用函式：將一張圖片加入聖誕樹並重新均勻分布螺旋位置
-  function addPhotoToTree(imgElement, captionText) {
+  // 產生預設精美聖誕卡圖片（資料夾尚未放入照片前墊檔用）
+  function createFallbackCard(emoji, bgColor1, bgColor2) {
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = 200;
+    offCanvas.height = 200;
+    const oCtx = offCanvas.getContext('2d');
+    const grad = oCtx.createLinearGradient(0, 0, 200, 200);
+    grad.addColorStop(0, bgColor1);
+    grad.addColorStop(1, bgColor2);
+    oCtx.fillStyle = grad;
+    oCtx.fillRect(0, 0, 200, 200);
+    oCtx.font = '85px sans-serif';
+    oCtx.textAlign = 'center';
+    oCtx.textBaseline = 'middle';
+    oCtx.fillText(emoji, 100, 105);
+    const img = new Image();
+    img.src = offCanvas.toDataURL();
+    return img;
+  }
+
+  // 重新計算所有照片在「聖誕樹狀態」與「散開星海狀態」的完美不重疊座標
+  function recalculatePhotoLayout() {
+    const total = loadedPhotos.length;
+    if (total === 0) return;
+
+    // 計算散開時的網格行列數，確保每張照片有獨立空間、不重疊、不超出畫布
+    const cols = Math.ceil(Math.sqrt(total * 1.1));
+    const rows = Math.ceil(total / cols);
+
+    // 散開時的安全可視範圍（以樹中心 cx 為基準，往上展開，絕不掉出底部）
+    const areaWidth = 240;   // 左右寬度範圍 (-120 ~ +120)
+    const areaHeight = 250;  // 上下高度範圍
+    const centerOffsetY = -165; // 往上提，讓所有照片都在畫布正中央
+
+    loadedPhotos.forEach((p, idx) => {
+      // A. 聖誕樹狀態：黃金角螺旋分布
+      p.progress = total === 1 ? 0.45 : 0.16 + (idx / (total - 1)) * 0.66;
+      p.baseAngle = idx * 2.39996;
+
+      // B. 散開星海狀態：均勻網格 + 微微自然錯落感（保證不重疊、不出界）
+      const r = Math.floor(idx / cols);
+      const c = idx % cols;
+
+      // 最後一列如果沒滿，自動置中對齊
+      const itemsInThisRow = (r === rows - 1) ? (total - r * cols) : cols;
+      const colStep = itemsInThisRow > 1 ? areaWidth / (itemsInThisRow - 1) : 0;
+      const rowStep = rows > 1 ? areaHeight / (rows - 1) : 0;
+
+      const baseX = itemsInThisRow > 1 ? -areaWidth / 2 + c * colStep : 0;
+      const baseY = rows > 1 ? centerOffsetY - areaHeight / 2 + r * rowStep : centerOffsetY;
+
+      // 加入極小幅度的錯落（不超過 10px），保留星海漂浮感又不重疊
+      const jitterX = ((idx * 17) % 15) - 7;
+      const jitterY = ((idx * 23) % 15) - 7;
+
+      p.scatterX = baseX + jitterX;
+      p.scatterY = baseY + jitterY;
+      p.scatterZ = ((idx % 3) - 1) * 25; // 輕微前後景深
+    });
+  }
+
+  // 將照片加入聖誕樹
+  function addPhotoToTree(imgElement, captionText = '', isReal = true) {
+    if (isReal && !hasRealPhotos) {
+      loadedPhotos.length = 0;
+      hasRealPhotos = true;
+    }
+
     loadedPhotos.push({
       img: imgElement,
       caption: captionText,
       progress: 0.2,
       baseAngle: 0,
-      scatterX: (Math.random() - 0.5) * 280,
-      scatterY: (Math.random() - 0.5) * 280,
-      scatterZ: (Math.random() - 0.5) * 180,
+      scatterX: 0,
+      scatterY: -150,
+      scatterZ: 0,
       screenX: 0,
       screenY: 0,
       screenSize: 0
     });
 
-    // 每次新增照片後，自動重新計算所有照片在樹上的螺旋高度與角度，讓分布永遠均勻美觀
-    const total = loadedPhotos.length;
-    loadedPhotos.forEach((p, idx) => {
-      p.progress = total === 1 ? 0.45 : 0.16 + (idx / (total - 1)) * 0.66;
-      p.baseAngle = idx * 2.39996; // 使用黃金角 (137.5度) 螺旋分布，照片絕不互相重疊！
+    recalculatePhotoLayout();
+  }
+
+  // 1. 先放上 5 張預設聖誕記憶卡（沒抓到真實照片前先墊檔）
+  const defaultCards = [
+    { emoji: '🎄', c1: '#1e3a8a', c2: '#3b82f6' },
+    { emoji: '❤️', c1: '#881337', c2: '#f43f5e' },
+    { emoji: '⛄', c1: '#0f766e', c2: '#2dd4bf' },
+    { emoji: '✨', c1: '#78350f', c2: '#f59e0b' },
+    { emoji: '🎁', c1: '#4c1d95', c2: '#8b5cf6' }
+  ];
+  defaultCards.forEach(item => {
+    const fallbackImg = createFallbackCard(item.emoji, item.c1, item.c2);
+    fallbackImg.onload = () => {
+      if (!hasRealPhotos) addPhotoToTree(fallbackImg, '', false);
+    };
+  });
+
+  // 2. 自動掃描「她的照片」資料夾內的 photo1 ~ photo20
+  const photoFolder = '她的照片';
+  const extensions = ['jpg', 'JPG', 'png', 'PNG', 'jpeg'];
+
+  for (let i = 1; i <= maxFolderPhotos; i++) {
+    let loadedForIndex = false;
+    extensions.forEach(ext => {
+      const img = new Image();
+      img.src = `${photoFolder}/photo${i}.${ext}`;
+      img.onload = () => {
+        if (loadedForIndex) return;
+        loadedForIndex = true;
+        addPhotoToTree(img, '', true);
+      };
     });
   }
 
-  // 自動掃描並載入資料夾內的 photo1.jpg ~ photo20.jpg
-  for (let i = 1; i <= maxFolderPhotos; i++) {
-    const img = new Image();
-    img.src = `photo${i}.jpg`;
-    img.onload = () => {
-      const text = customCaptions[i] || `屬於我們的第 ${i} 個美好瞬間 ✨`;
-      addPhotoToTree(img, text);
-    };
-    // 若資料夾裡沒有該編號的照片，onerror 會安靜略過，不會報錯或破圖
-  }
-
-  // 📸 讓使用者（林妍儀）也能自己從手機/電腦相簿上傳照片到聖誕樹上
+  // 📸 網頁右上角「新增照片」按鈕
   const addPhotoBtn = document.getElementById('add-photo-btn');
   const photoUploadInput = document.getElementById('photo-upload-input');
 
@@ -102,16 +173,14 @@ if (treeCanvas) {
           const userImg = new Image();
           userImg.src = event.target.result;
           userImg.onload = () => {
-            addPhotoToTree(userImg, '妳親手掛上的專屬聖誕回憶 💖');
+            addPhotoToTree(userImg, '', true);
           };
         };
         reader.readAsDataURL(file);
       });
 
-      // 上傳完成後自動散開星海展示新照片，並響起聖誕鈴聲
       playBellSound();
-      targetSpread = 1;
-      photoUploadInput.value = ''; // 清空選擇器以便下次繼續新增
+      photoUploadInput.value = '';
     });
   }
 
@@ -123,9 +192,9 @@ if (treeCanvas) {
     particles.push({
       progress,
       baseAngle: progress * Math.PI * 24,
-      scatterX: (Math.random() - 0.5) * 340,
-      scatterY: (Math.random() - 0.5) * 360 - 150,
-      scatterZ: (Math.random() - 0.5) * 240,
+      scatterX: (Math.random() - 0.5) * 320,
+      scatterY: (Math.random() - 0.5) * 320 - 160, // 粒子散開也往上居中
+      scatterZ: (Math.random() - 0.5) * 220,
       colorType: i % 7 === 0 ? 'white' : (i % 3 === 0 ? 'blue' : 'gold')
     });
   }
@@ -145,15 +214,16 @@ if (treeCanvas) {
     let hitIndex = -1;
     for (let i = loadedPhotos.length - 1; i >= 0; i--) {
       const p = loadedPhotos[i];
-      const half = p.screenSize / 2 + 8;
+      const half = p.screenSize / 2 + 10;
       if (Math.abs(x - p.screenX) <= half && Math.abs(y - p.screenY) <= half) {
         hitIndex = i;
         break;
       }
     }
     hoverPhotoIndex = hitIndex;
+    treeCanvas.style.cursor = hitIndex !== -1 ? 'pointer' : 'grab';
 
-    if (isClick && hitIndex !== -1 && currentSpread > 0.35) {
+    if (isClick && hitIndex !== -1) {
       openPhotoModal(loadedPhotos[hitIndex]);
     }
   }
@@ -161,9 +231,8 @@ if (treeCanvas) {
   // 滑鼠操作
   treeCanvas.addEventListener('mousedown', (e) => {
     isDragging = true;
+    dragMoved = false;
     lastX = e.clientX;
-    const pos = getCanvasPos(e.clientX, e.clientY);
-    checkPhotoHit(pos.x, pos.y, true);
   });
 
   window.addEventListener('mousemove', (e) => {
@@ -172,12 +241,17 @@ if (treeCanvas) {
 
     if (!isDragging) return;
     const dx = e.clientX - lastX;
+    if (Math.abs(dx) > 3) dragMoved = true;
     velocityX = dx * 0.008;
     treeAngle += velocityX;
     lastX = e.clientX;
   });
 
-  window.addEventListener('mouseup', () => {
+  window.addEventListener('mouseup', (e) => {
+    if (isDragging && !dragMoved) {
+      const pos = getCanvasPos(e.clientX, e.clientY);
+      checkPhotoHit(pos.x, pos.y, true);
+    }
     isDragging = false;
   });
 
@@ -197,19 +271,14 @@ if (treeCanvas) {
 
   // 手機觸控手勢
   let lastTapTime = 0;
+  let touchStartPos = { x: 0, y: 0 };
+
   treeCanvas.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
       isDragging = true;
+      dragMoved = false;
       lastX = e.touches[0].clientX;
-      const pos = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
-      checkPhotoHit(pos.x, pos.y, true);
-
-      const now = Date.now();
-      if (now - lastTapTime < 300) {
-        targetSpread = targetSpread > 0.5 ? 0 : 1;
-        playBellSound();
-      }
-      lastTapTime = now;
+      touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     } else if (e.touches.length === 2) {
       isDragging = false;
       const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -222,12 +291,12 @@ if (treeCanvas) {
     e.preventDefault();
     if (e.touches.length === 1 && isDragging) {
       const dx = e.touches[0].clientX - lastX;
+      if (Math.abs(e.touches[0].clientX - touchStartPos.x) > 5) {
+        dragMoved = true;
+      }
       velocityX = dx * 0.01;
       treeAngle += velocityX;
       lastX = e.touches[0].clientX;
-
-      const pos = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
-      checkPhotoHit(pos.x, pos.y, false);
     } else if (e.touches.length === 2 && initialPinchDist) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -238,7 +307,18 @@ if (treeCanvas) {
     }
   }, { passive: false });
 
-  treeCanvas.addEventListener('touchend', () => {
+  treeCanvas.addEventListener('touchend', (e) => {
+    if (isDragging && !dragMoved && e.changedTouches.length === 1) {
+      const pos = getCanvasPos(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      checkPhotoHit(pos.x, pos.y, true);
+
+      const now = Date.now();
+      if (now - lastTapTime < 300 && hoverPhotoIndex === -1) {
+        targetSpread = targetSpread > 0.5 ? 0 : 1;
+        playBellSound();
+      }
+      lastTapTime = now;
+    }
     isDragging = false;
     initialPinchDist = null;
   });
@@ -307,28 +387,35 @@ if (treeCanvas) {
     });
 
     // 2. 繪製照片掛飾（依 Z 軸深度排序）
+    // 散開時只做輕微左右搖擺（不讓照片繞大圈互撞重疊）
+    const swayX = Math.sin(treeAngle * 1.5) * 8;
+    const swayY = Math.cos(treeAngle * 1.2) * 5;
+
     const renderList = loadedPhotos.map((photo, index) => {
       const treeY = -photo.progress * height;
-      const radius = (1 - photo.progress) * (maxRadius * 0.85);
+      const radius = (1 - photo.progress) * (maxRadius * 0.92);
       const angle = photo.baseAngle + treeAngle;
       const treeX = Math.cos(angle) * radius;
       const treeZ = Math.sin(angle) * radius;
 
-      const rotScatterX = photo.scatterX * Math.cos(treeAngle * 0.6) - photo.scatterZ * Math.sin(treeAngle * 0.6);
-      const rotScatterZ = photo.scatterX * Math.sin(treeAngle * 0.6) + photo.scatterZ * Math.cos(treeAngle * 0.6);
+      const targetScatterX = photo.scatterX + swayX;
+      const targetScatterY = photo.scatterY + swayY;
 
-      const x = cx + treeX * (1 - currentSpread) + rotScatterX * currentSpread;
-      const y = cy + treeY * (1 - currentSpread) + photo.scatterY * currentSpread;
-      const z = treeZ * (1 - currentSpread) + rotScatterZ * currentSpread;
+      const x = cx + treeX * (1 - currentSpread) + targetScatterX * currentSpread;
+      const y = cy + treeY * (1 - currentSpread) + targetScatterY * currentSpread;
+      const z = treeZ * (1 - currentSpread) + photo.scatterZ * currentSpread;
 
       return { photo, index, x, y, z };
     }).sort((a, b) => a.z - b.z);
 
+    // 根據照片數量自動微調散開後的大小，照片多時也不會擠在一起
+    const maxSpreadSize = loadedPhotos.length > 9 ? 46 : 56;
+
     renderList.forEach(({ photo, index, x, y, z }) => {
       const isHovered = (index === hoverPhotoIndex);
-      const baseSize = 20 + currentSpread * 36;
-      const size = isHovered ? baseSize * 1.35 : baseSize;
-      const depthScale = 0.85 + (z / 200) * 0.25;
+      const baseSize = 28 + currentSpread * (maxSpreadSize - 28);
+      const size = isHovered ? baseSize * 1.25 : baseSize;
+      const depthScale = 0.88 + (z / 220) * 0.2;
       const finalSize = size * depthScale;
 
       photo.screenX = x;
@@ -338,7 +425,7 @@ if (treeCanvas) {
       ctx.save();
       ctx.translate(x, y);
 
-      ctx.shadowColor = isHovered ? '#ffd700' : 'rgba(255, 255, 255, 0.8)';
+      ctx.shadowColor = isHovered ? '#ffd700' : 'rgba(255, 255, 255, 0.85)';
       ctx.shadowBlur = isHovered ? 18 : 8;
       ctx.fillStyle = '#ffffff';
       const pad = 3;
@@ -367,6 +454,7 @@ if (treeCanvas) {
   }
   drawTree();
 }
+
 // --- 3. 背景雪花系統 ---
 const snowCanvas = document.getElementById('snow-canvas');
 if (snowCanvas) {
@@ -399,7 +487,6 @@ if (snowCanvas) {
     flakes.forEach(f => {
       sCtx.beginPath();
       sCtx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-      
       if (f.gold) {
         sCtx.fillStyle = `rgba(254, 240, 138, ${f.opacity})`;
         sCtx.shadowColor = '#fef08a';
@@ -472,7 +559,7 @@ if (musicBtn) {
   });
 }
 
-// --- 5. 禮物彈窗邏輯 ---
+// --- 5. 禮物彈窗與拍立得照片彈窗邏輯 ---
 const giftModal = document.getElementById('gift-modal');
 const modalIcon = document.getElementById('modal-gift-icon');
 const modalTitle = document.getElementById('modal-gift-title');
@@ -499,6 +586,50 @@ if (closeModalBtn) {
   });
 }
 
+// 📸 拍立得放大彈窗開啟與關閉
+const photoModal = document.getElementById('photo-modal');
+const modalPhotoImg = document.getElementById('modal-photo-img');
+const modalPhotoCaption = document.getElementById('modal-photo-caption');
+const closePhotoBtn = document.getElementById('close-photo-btn');
+
+function openPhotoModal(photoData) {
+  playBellSound();
+  if (modalPhotoImg) modalPhotoImg.src = photoData.img.src;
+  if (modalPhotoCaption) {
+    if (photoData.caption && photoData.caption.trim() !== '') {
+      modalPhotoCaption.textContent = photoData.caption;
+      modalPhotoCaption.style.display = 'block';
+    } else {
+      modalPhotoCaption.textContent = '';
+      modalPhotoCaption.style.display = 'none';
+    }
+  }
+  if (photoModal) {
+    photoModal.classList.remove('hidden');
+  }
+}
+
+function closePhotoModal() {
+  if (photoModal) {
+    photoModal.classList.add('hidden');
+  }
+}
+
+if (closePhotoBtn) {
+  closePhotoBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closePhotoModal();
+  });
+}
+
+if (photoModal) {
+  photoModal.addEventListener('click', (e) => {
+    if (e.target === photoModal) {
+      closePhotoModal();
+    }
+  });
+}
+
 // --- 6. 點擊封面卡片觸發動畫流程 ---
 const welcomeOverlay = document.getElementById('welcome-overlay');
 const openCardBtn = document.getElementById('open-card-btn');
@@ -508,10 +639,7 @@ const penguin = document.getElementById('santa-sleigh');
 if (openCardBtn) {
   openCardBtn.addEventListener('click', () => {
     playBellSound();
-    
-    if (welcomeOverlay) {
-      welcomeOverlay.classList.add('fade-out');
-    }
+    if (welcomeOverlay) welcomeOverlay.classList.add('fade-out');
 
     bgMusic.play().then(() => {
       isPlayingMusic = true;
@@ -519,38 +647,23 @@ if (openCardBtn) {
     }).catch(err => console.log("Autoplay blocked:", err));
 
     setTimeout(() => {
-      if (penguin) {
-        penguin.classList.add('walk-animation');
-      }
+      if (penguin) penguin.classList.add('walk-animation');
     }, 300);
 
     setTimeout(() => {
-      if (presentsGroup) {
-        presentsGroup.classList.add('show-presents');
-      }
+      if (presentsGroup) presentsGroup.classList.add('show-presents');
       playBellSound();
     }, 4800);
   });
 }
 
-// --- 電腦無邊界滿版 ＋ 手機（含 LINE 瀏覽器）等比例撐滿寬度引擎 ---
+// --- 7. 螢幕等比例縮放引擎 ---
 function fitScreenScale() {
-  // 同時取得多種視窗寬高來源，確保 LINE 內建瀏覽器也能抓到正確尺寸
   const winW = document.documentElement.clientWidth || window.innerWidth;
   const winH = document.documentElement.clientHeight || window.innerHeight;
-  
   const baseHeight = 720;
-  let baseWidth = 1280;
+  let baseWidth = winW > winH ? Math.max(1280, Math.round(baseHeight * (winW / winH))) : 1280;
 
-  if (winW > winH) {
-    // 🖥️ 電腦 / 橫向螢幕：動態配合螢幕長寬比，100% 滿版無黑邊
-    baseWidth = Math.max(1280, Math.round(baseHeight * (winW / winH)));
-  } else {
-    // 📱 手機直向螢幕：強制鎖定標準 1280x720 寬螢幕比例
-    baseWidth = 1280;
-  }
-
-  // 強制鎖定畫布實際像素，不被手機壓縮
   document.body.style.width = `${baseWidth}px`;
   document.body.style.minWidth = `${baseWidth}px`;
   document.body.style.height = `${baseHeight}px`;
@@ -562,12 +675,10 @@ function fitScreenScale() {
     sCanvas.height = baseHeight;
   }
 
-  // 計算縮放倍率並套用（手機直立時會剛好撐滿 100% 手機螢幕左右寬度）
   const scale = Math.min(winW / baseWidth, winH / baseHeight);
   document.body.style.transform = `scale(${scale})`;
 }
 
-// 頁面載入、視窗變動，以及 LINE 瀏覽器動畫展開後（100ms、500ms）各執行一次確保精準
 window.addEventListener('resize', fitScreenScale);
 window.addEventListener('load', fitScreenScale);
 fitScreenScale();
